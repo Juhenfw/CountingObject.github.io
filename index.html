@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Pen Counter - Universal Camera</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- ONNX Runtime Web -->
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+</head>
+<body>
+    <h1>🖊️ Pen Object Counter</h1>
+    
+    <div class="container">
+        <!-- Camera Section -->
+        <div class="webcam-section">
+            <h2>📷 Camera Feed</h2>
+            <video id="webcam" autoplay muted playsinline webkit-playsinline></video>
+            <div class="controls">
+                <button id="startButton">🎥 Start Camera</button>
+                <button id="switchCameraButton" style="display:none;">🔄 Switch Camera</button>
+                <button id="captureButton" disabled>📸 Capture Photo</button>
+            </div>
+            <div class="camera-info">
+                <span id="cameraInfo">Camera not active</span>
+            </div>
+        </div>
+
+        <!-- Image Processing Section -->
+        <div class="image-section">
+            <h2>🖼️ Captured Image</h2>
+            <canvas id="capturedImage" width="640" height="480"></canvas>
+            <div class="controls">
+                <button id="countButton" disabled>🔢 Count Objects</button>
+                <button id="resetButton">🔄 Reset</button>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section">
+            <h2>📊 Detection Results</h2>
+            <div id="countDisplay">
+                <span class="count-number">0</span>
+                <span class="count-label">Pen Objects Detected</span>
+            </div>
+            <div id="processingInfo">Ready to start...</div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
