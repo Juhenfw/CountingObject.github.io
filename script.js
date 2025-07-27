@@ -19,11 +19,42 @@ let availableCameras = [];
 let currentCameraIndex = 0;
 
 // YOLO Model Configuration
-const MODEL_PATH = './models/pen_best2.onnx';
+const MODEL_PATH = './models/pen_best3.onnx'; // Update nama model
 const INPUT_SIZE = 640;
 const CONFIDENCE_THRESHOLD = 0.4;
 const NMS_THRESHOLD = 0.4;
-const CLASS_NAMES = ['Pen'];
+const CLASS_NAMES = ['eraser', 'pencil', 'pencil sharpener', 'ruler', 'pen']; // Update dengan 2 kelas
+
+// Filter Variables
+let selectedClasses = new Set(['eraser', 'pencil', 'pencil sharpener', 'ruler', 'pen']); // Default kedua objek dipilih
+
+/**
+ * Initialize object selection handlers
+ */
+function initializeObjectSelection() {
+    const checkboxes = document.querySelectorAll('.checkbox-item input[type="checkbox"]');
+    const selectionCount = document.getElementById('selectionCount');
+    
+    function updateSelectionCount() {
+        const checkedBoxes = document.querySelectorAll('.checkbox-item input[type="checkbox"]:checked');
+        selectionCount.textContent = `${checkedBoxes.length} objek dipilih`;
+        
+        // Update selected classes
+        selectedClasses.clear();
+        checkedBoxes.forEach(checkbox => {
+            selectedClasses.add(checkbox.value);
+        });
+        
+        console.log('Selected classes:', Array.from(selectedClasses));
+    }
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectionCount);
+    });
+    
+    // Initialize count
+    updateSelectionCount();
+}
 
 /**
  * Debug function untuk mobile troubleshooting
@@ -102,7 +133,7 @@ async function detectCameras() {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             throw new Error('getUserMedia not supported on this browser/device');
         }
-
+        
         // Mobile-specific permission request
         const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
@@ -111,13 +142,13 @@ async function detectCameras() {
             
             // For mobile, try basic permission first
             try {
-                const tempStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
+                const tempStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
                         facingMode: 'environment',
                         width: { ideal: 640, max: 1280 },
                         height: { ideal: 480, max: 720 }
-                    }, 
-                    audio: false 
+                    },
+                    audio: false
                 });
                 tempStream.getTracks().forEach(track => track.stop());
             } catch (permError) {
@@ -126,13 +157,13 @@ async function detectCameras() {
             }
         } else {
             // Desktop approach
-            const tempStream = await navigator.mediaDevices.getUserMedia({ 
-                video: true, 
-                audio: false 
+            const tempStream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: false
             });
             tempStream.getTracks().forEach(track => track.stop());
         }
-
+        
         // Get available devices after permission granted
         const devices = await navigator.mediaDevices.enumerateDevices();
         availableCameras = devices.filter(device => device.kind === 'videoinput');
@@ -142,15 +173,16 @@ async function detectCameras() {
         if (availableCameras.length === 0) {
             throw new Error('No cameras found on this device');
         }
-
+        
         // Update UI based on available cameras
         if (availableCameras.length > 1) {
             switchCameraButton.style.display = 'inline-block';
         } else {
             switchCameraButton.style.display = 'none';
         }
-
+        
         return availableCameras;
+        
     } catch (error) {
         console.error('Error detecting cameras:', error);
         handleCameraError(error);
@@ -170,7 +202,7 @@ function getCameraConstraints(deviceId = null) {
         video: {},
         audio: false
     };
-
+    
     if (isMobile) {
         // Mobile-optimized constraints
         constraints.video = {
@@ -179,25 +211,26 @@ function getCameraConstraints(deviceId = null) {
             frameRate: { ideal: 15, max: 30 },
             aspectRatio: { ideal: 4/3 }
         };
-
+        
         if (deviceId) {
             constraints.video.deviceId = { exact: deviceId };
         } else {
             // Default to back camera on mobile
             constraints.video.facingMode = { ideal: 'environment' };
         }
-
+        
         // iOS specific optimizations
         if (isIOS) {
             constraints.video.width = { ideal: 640, max: 1024 };
             constraints.video.height = { ideal: 480, max: 768 };
             constraints.video.frameRate = { ideal: 15, max: 24 };
         }
-
+        
         // Android specific optimizations
         if (isAndroid) {
             constraints.video.focusMode = { ideal: 'continuous' };
         }
+        
     } else {
         // Desktop constraints
         constraints.video = {
@@ -205,12 +238,12 @@ function getCameraConstraints(deviceId = null) {
             height: { ideal: 480, max: 1080 },
             frameRate: { ideal: 30 }
         };
-
+        
         if (deviceId) {
             constraints.video.deviceId = { exact: deviceId };
         }
     }
-
+    
     console.log('Camera constraints for', isMobile ? 'mobile' : 'desktop', ':', constraints);
     return constraints;
 }
@@ -224,14 +257,13 @@ async function startCamera(deviceId = null) {
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
         }
-
+        
         // Check browser support first
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             throw new Error('getUserMedia not supported on this browser');
         }
-
-        const constraints = getCameraConstraints(deviceId);
         
+        const constraints = getCameraConstraints(deviceId);
         processingInfo.textContent = 'Starting camera...';
         
         // Show loading animation
@@ -243,13 +275,13 @@ async function startCamera(deviceId = null) {
         // Assign to video element
         webcam.srcObject = stream;
         currentDeviceId = deviceId;
-
+        
         // Wait for video to be ready with timeout
         await new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
                 reject(new Error('Camera initialization timeout'));
             }, 10000); // 10 second timeout
-
+            
             webcam.onloadedmetadata = () => {
                 clearTimeout(timeout);
                 webcam.play()
@@ -262,7 +294,7 @@ async function startCamera(deviceId = null) {
                 reject(error);
             };
         });
-
+        
         // Update UI on success
         startButton.textContent = '✅ Camera Active';
         startButton.disabled = true;
@@ -275,7 +307,6 @@ async function startCamera(deviceId = null) {
         cameraInfo.textContent = `📹 ${settings.width}x${settings.height} - ${activeTrack.label || 'Camera Active'}`;
         
         processingInfo.textContent = '✅ Camera ready! Click "Capture Photo" to take a picture.';
-        
         console.log('Camera started successfully:', settings);
         
     } catch (error) {
@@ -307,7 +338,7 @@ async function startCamera(deviceId = null) {
                     audio: false
                 }
             ];
-
+            
             for (let i = 0; i < fallbackAttempts.length; i++) {
                 try {
                     console.log(`Trying fallback attempt ${i + 1}...`);
@@ -318,8 +349,8 @@ async function startCamera(deviceId = null) {
                     startButton.disabled = true;
                     captureButton.disabled = false;
                     processingInfo.textContent = '✅ Camera ready with fallback settings!';
-                    
                     return; // Success, exit function
+                    
                 } catch (fallbackError) {
                     console.error(`Fallback attempt ${i + 1} failed:`, fallbackError);
                     if (stream) {
@@ -385,7 +416,7 @@ function captureImage() {
         alert('Camera not active. Please start camera first.');
         return;
     }
-
+    
     const canvas = capturedImage;
     const ctx = canvas.getContext('2d');
     
@@ -418,19 +449,19 @@ function captureImage() {
 }
 
 /**
- * Debug model structure
+ * Debug model structure untuk 5 kelas
  */
 async function debugModelStructure() {
     if (!session) {
         console.log('Model not loaded yet');
         return;
     }
-
+    
     console.log('=== MODEL DEBUG INFO ===');
     console.log('Input names:', session.inputNames);
     console.log('Output names:', session.outputNames);
     
-    // Test with dummy input
+    // Test dengan dummy input
     const dummyInput = new Float32Array(1 * 3 * 640 * 640).fill(0.5);
     const feeds = {};
     feeds[session.inputNames[0]] = new ort.Tensor('float32', dummyInput, [1, 3, 640, 640]);
@@ -441,9 +472,17 @@ async function debugModelStructure() {
     
     console.log('Output tensor shape:', output.dims);
     console.log('Output data type:', output.type);
-    console.log('Expected for single class: [1, 5, 8400]');
+    console.log('Expected for 5 classes: [1, 9, 8400]'); // 4 coords + 5 classes
     console.log('Total output elements:', output.data.length);
     console.log('First 20 values:', Array.from(output.data.slice(0, 20)));
+    
+    // Verifikasi struktur output
+    const expectedSize = 1 * 9 * 8400; // 75,600
+    if (output.data.length === expectedSize) {
+        console.log('✅ Output structure matches 5-class model');
+    } else {
+        console.log('❌ Output structure mismatch. Expected:', expectedSize, 'Got:', output.data.length);
+    }
 }
 
 /**
@@ -548,6 +587,7 @@ async function runInference(inputTensor) {
         console.log('Output data length:', output.data.length);
         
         return output.data;
+        
     } catch (error) {
         console.error('Error during inference:', error);
         throw error;
@@ -555,36 +595,46 @@ async function runInference(inputTensor) {
 }
 
 /**
- * Post-process YOLO output
+ * Post-process YOLO output dengan 5 kelas
  */
 function postprocessOutput(output) {
     const detections = [];
     const numAnchors = 8400;
+    const numClasses = CLASS_NAMES.length; // 5 kelas
     
     console.log('Processing output with length:', output.length);
     console.log('Expected anchors:', numAnchors);
+    console.log('Number of classes:', numClasses);
+    console.log('Selected classes for filtering:', Array.from(selectedClasses));
     
-    // Parse data from [1, 5, 8400] format
+    // Parse data dari format [1, 9, 8400] (x,y,w,h + 5 class confidences)
     for (let i = 0; i < numAnchors; i++) {
         const x = output[i];
         const y = output[numAnchors + i];
         const w = output[2 * numAnchors + i];
         const h = output[3 * numAnchors + i];
-        const confidence = output[4 * numAnchors + i];
         
-        if (confidence > CONFIDENCE_THRESHOLD) {
-            detections.push({
-                x: x - w / 2,
-                y: y - h / 2,
-                width: w,
-                height: h,
-                confidence: confidence,
-                classId: 0
-            });
+        // Cek setiap kelas
+        for (let classIdx = 0; classIdx < numClasses; classIdx++) {
+            const confidence = output[(4 + classIdx) * numAnchors + i];
+            const className = CLASS_NAMES[classIdx];
+            
+            // Filter berdasarkan confidence threshold dan selected classes
+            if (confidence > CONFIDENCE_THRESHOLD && selectedClasses.has(className)) {
+                detections.push({
+                    x: x - w / 2,
+                    y: y - h / 2,
+                    width: w,
+                    height: h,
+                    confidence: confidence,
+                    classId: classIdx,
+                    className: className
+                });
+            }
         }
     }
     
-    console.log(`Found ${detections.length} detections before NMS`);
+    console.log(`Found ${detections.length} detections before NMS (filtered by selection)`);
     return detections;
 }
 
@@ -639,7 +689,7 @@ function calculateIoU(box1, box2) {
 }
 
 /**
- * Draw detection results on canvas
+ * Draw detection results dengan warna berbeda untuk setiap kelas
  */
 function drawDetections(detections) {
     const canvas = capturedImage;
@@ -654,6 +704,15 @@ function drawDetections(detections) {
     
     console.log(`Drawing ${detections.length} detections`);
     
+    // Color mapping untuk 5 kelas
+    const classColors = {
+        'eraser': '#ff6b35',        // Orange
+        'pencil': '#4facfe',        // Blue
+        'pencil sharpener': '#7b68ee', // Medium Slate Blue
+        'ruler': '#32cd32',         // Lime Green
+        'pen': '#ff1493'            // Deep Pink
+    };
+    
     // Draw bounding boxes
     detections.forEach((detection, index) => {
         const x = detection.x * scaleX;
@@ -661,15 +720,16 @@ function drawDetections(detections) {
         const width = detection.width * scaleX;
         const height = detection.height * scaleY;
         
+        const color = classColors[detection.className] || '#ff6b35';
+        
         // Draw bounding box
-        ctx.strokeStyle = '#ff6b35';
+        ctx.strokeStyle = color;
         ctx.lineWidth = 3;
         ctx.strokeRect(x, y, width, height);
         
         // Draw label background
-        ctx.fillStyle = '#ff6b35';
-        const className = CLASS_NAMES[detection.classId] || 'Unknown';
-        const label = `${className} ${Math.round(detection.confidence * 100)}%`;
+        ctx.fillStyle = color;
+        const label = `${detection.className} ${Math.round(detection.confidence * 100)}%`;
         ctx.font = '14px Arial';
         const textWidth = ctx.measureText(label).width;
         ctx.fillRect(x, y - 25, textWidth + 10, 25);
@@ -683,11 +743,16 @@ function drawDetections(detections) {
 }
 
 /**
- * Main counting function
+ * Main counting function with class breakdown
  */
 async function countObjects() {
     if (!currentImageData || !session) {
         alert('Please capture an image and ensure AI model is loaded');
+        return;
+    }
+    
+    if (selectedClasses.size === 0) {
+        alert('Pilih minimal satu objek untuk dihitung!');
         return;
     }
 
@@ -712,15 +777,35 @@ async function countObjects() {
         // Draw results
         drawDetections(detections);
         
+        // Count by class
+        const classCounts = {};
+        detections.forEach(detection => {
+            const className = detection.className;
+            classCounts[className] = (classCounts[className] || 0) + 1;
+        });
+        
         // Update count display
-        countDisplay.textContent = detections.length;
-        processingInfo.textContent = `✅ Found ${detections.length} Pen objects with confidence > ${CONFIDENCE_THRESHOLD * 100}%`;
+        const totalCount = detections.length;
+        countDisplay.innerHTML = `
+            <span class="count-number">${totalCount}</span>
+            <span class="count-label">Total Objek</span>
+            <div class="count-breakdown">
+                ${Object.entries(classCounts).map(([className, count]) => 
+                    `${className}: ${count}`
+                ).join(' | ')}
+            </div>
+        `;
+        
+        // Update processing info
+        const selectedClassesArray = Array.from(selectedClasses);
+        processingInfo.textContent = `✅ Found ${totalCount} objects (${selectedClassesArray.join(', ')}) with confidence > ${CONFIDENCE_THRESHOLD * 100}%`;
         
         // Log final results
         console.log('=== FINAL RESULTS ===');
-        console.log(`Total detections: ${detections.length}`);
+        console.log(`Total detections: ${totalCount}`);
+        console.log('Class breakdown:', classCounts);
         detections.forEach((det, i) => {
-            console.log(`${i + 1}. Pen ${(det.confidence * 100).toFixed(1)}%`);
+            console.log(`${i + 1}. ${det.className} ${(det.confidence * 100).toFixed(1)}%`);
         });
         
     } catch (error) {
@@ -742,14 +827,18 @@ function resetApplication() {
         stream.getTracks().forEach(track => track.stop());
         stream = null;
     }
-
+    
     // Reset UI
     startButton.textContent = '🎥 Start Camera';
     startButton.disabled = false;
     captureButton.disabled = true;
     countButton.disabled = true;
     switchCameraButton.disabled = true;
-    countDisplay.textContent = '0';
+    countDisplay.innerHTML = `
+        <span class="count-number">0</span>
+        <span class="count-label">Total Objek</span>
+        <div class="count-breakdown"></div>
+    `;
     processingInfo.textContent = 'Ready to start...';
     cameraInfo.textContent = 'Camera not active';
     
@@ -782,6 +871,7 @@ window.addEventListener('load', async () => {
     debugMobileSupport();
     await initializeModel();
     await initializeCamera();
+    initializeObjectSelection(); // Tambahkan ini
 });
 
 // Handle orientation change on mobile

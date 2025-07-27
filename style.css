@@ -28,8 +28,135 @@ h1 {
     margin: 0 auto;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto;
+    grid-template-rows: auto auto auto;
     gap: 15px;
+}
+
+/* Object Selection Styling - Enhanced for 5 Classes */
+.object-selection-section {
+    grid-column: 1 / -1;
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    margin-bottom: 5px;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.object-selector {
+    text-align: center;
+}
+
+.object-selector > label {
+    color: #4a5568;
+    margin-bottom: 15px;
+    display: block;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.checkbox-group {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+.checkbox-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.3s ease;
+}
+
+.checkbox-item:hover {
+    transform: translateY(-2px);
+}
+
+.checkbox-item input[type="checkbox"] {
+    display: none;
+}
+
+.checkbox-item label {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    border: 2px solid #e2e8f0;
+    border-radius: 25px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 140px;
+    justify-content: center;
+    font-size: 14px;
+    text-align: center;
+}
+
+/* Specific color coding for each of the 5 classes */
+#eraser:checked + label {
+    background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+    color: white;
+    border-color: #ff6b35;
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+}
+
+#pencil:checked + label {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    border-color: #4facfe;
+    box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4);
+}
+
+#pencil-sharpener:checked + label {
+    background: linear-gradient(135deg, #7b68ee 0%, #9370db 100%);
+    color: white;
+    border-color: #7b68ee;
+    box-shadow: 0 4px 12px rgba(123, 104, 238, 0.4);
+}
+
+#ruler:checked + label {
+    background: linear-gradient(135deg, #32cd32 0%, #98fb98 100%);
+    color: white;
+    border-color: #32cd32;
+    box-shadow: 0 4px 12px rgba(50, 205, 50, 0.4);
+}
+
+#pen:checked + label {
+    background: linear-gradient(135deg, #ff1493 0%, #ff69b4 100%);
+    color: white;
+    border-color: #ff1493;
+    box-shadow: 0 4px 12px rgba(255, 20, 147, 0.4);
+}
+
+.checkmark {
+    margin-right: 8px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.checkbox-item input[type="checkbox"]:checked + label .checkmark {
+    opacity: 1;
+}
+
+.selection-info {
+    margin-top: 15px;
+}
+
+#selectionCount {
+    color: #718096;
+    font-size: 14px;
+    background: rgba(113, 128, 150, 0.1);
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: 1px solid rgba(113, 128, 150, 0.2);
+    display: inline-block;
+    font-weight: 500;
 }
 
 .webcam-section, .image-section {
@@ -72,7 +199,6 @@ video, canvas {
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
-/* Mobile-specific video optimization */
 video {
     max-height: 60vh;
     -webkit-playsinline: true;
@@ -126,24 +252,6 @@ button:active:not(:disabled) {
     transform: translateY(0);
 }
 
-button::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.3);
-    transition: width 0.6s, height 0.6s;
-    transform: translate(-50%, -50%);
-}
-
-button:active::before {
-    width: 300px;
-    height: 300px;
-}
-
 #resetButton {
     background: linear-gradient(135deg, #ff6b6b 0%, #ffa500 100%);
 }
@@ -159,7 +267,7 @@ button:active::before {
     border-radius: 15px;
     margin: 15px 0;
     display: inline-block;
-    min-width: 180px;
+    min-width: 200px;
     box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
 }
 
@@ -173,6 +281,29 @@ button:active::before {
 .count-label {
     font-size: 1em;
     opacity: 0.9;
+    margin-top: 5px;
+    display: block;
+}
+
+.count-breakdown {
+    font-size: 0.85em;
+    margin-top: 12px;
+    color: rgba(255,255,255,0.9);
+    font-weight: normal;
+    border-top: 1px solid rgba(255,255,255,0.3);
+    padding-top: 10px;
+    line-height: 1.4;
+}
+
+/* Enhanced breakdown styling for 5 classes */
+.count-breakdown .class-count {
+    display: inline-block;
+    margin: 2px 5px;
+    padding: 4px 8px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 12px;
+    font-size: 0.8em;
+    border: 1px solid rgba(255,255,255,0.3);
 }
 
 #processingInfo {
@@ -201,86 +332,51 @@ button:active::before {
     border: 1px solid #e2e8f0;
 }
 
-/* Detection visualization */
-.detected-object {
-    position: absolute;
-    border: 3px solid #ff6b35;
-    background: rgba(255, 107, 53, 0.1);
-    z-index: 10;
-}
-
-.object-label {
-    position: absolute;
-    background: #ff6b35;
-    color: white;
-    padding: 2px 8px;
-    font-size: 12px;
-    font-weight: bold;
-    border-radius: 4px;
-    z-index: 11;
-}
-
-/* Loading animation */
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-}
-
-.loading {
-    animation: spin 1s linear infinite;
-}
-
-.pulse {
-    animation: pulse 1s ease-in-out infinite;
-}
-
-/* Success animation */
-@keyframes success {
-    0% { background-color: #4CAF50; }
-    50% { background-color: #8BC34A; }
-    100% { background-color: #4CAF50; }
-}
-
-.success-border {
-    animation: success 1s ease-in-out;
-}
-
-/* Mobile Responsive Design */
+/* Mobile Responsive Design - Enhanced for 5 classes */
 @media (max-width: 768px) {
     body {
         padding: 5px;
     }
-    
+
     .container {
         grid-template-columns: 1fr;
         gap: 10px;
     }
-    
+
     h1 {
         font-size: 1.8em;
         margin-bottom: 15px;
     }
-    
+
     h2 {
         font-size: 1.1em;
     }
-    
-    .webcam-section, .image-section {
-        padding: 12px;
+
+    .object-selection-section,
+    .webcam-section, 
+    .image-section {
+        padding: 15px;
+    }
+
+    .checkbox-group {
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        margin: 15px 0;
     }
     
+    .checkbox-item label {
+        min-width: 200px;
+        padding: 15px 25px;
+        font-size: 15px;
+    }
+
     .controls {
         flex-direction: column;
         align-items: center;
         gap: 8px;
     }
-    
+
     button {
         width: 100%;
         max-width: 250px;
@@ -288,25 +384,31 @@ button:active::before {
         font-size: 14px;
         min-height: 48px;
     }
-    
+
     video, canvas {
         border-width: 2px;
-        max-height: 50vh;
+        max-height: 45vh;
     }
-    
+
     #countDisplay {
         padding: 20px;
-        min-width: 150px;
+        min-width: 180px;
     }
-    
+
     .count-number {
         font-size: 2em;
     }
-    
-    .count-label {
-        font-size: 0.9em;
+
+    .count-breakdown {
+        font-size: 0.8em;
     }
-    
+
+    .count-breakdown .class-count {
+        display: block;
+        margin: 4px 0;
+        text-align: center;
+    }
+
     #processingInfo {
         font-size: 13px;
         padding: 8px;
@@ -315,130 +417,156 @@ button:active::before {
 
 /* Small mobile devices */
 @media (max-width: 480px) {
-    body {
-        padding: 3px;
-    }
-    
     h1 {
         font-size: 1.5em;
         margin-bottom: 10px;
     }
-    
-    .webcam-section, .image-section {
-        padding: 10px;
+
+    .object-selection-section {
+        padding: 12px;
     }
-    
+
+    .checkbox-item label {
+        min-width: 180px;
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+
     button {
         padding: 12px 14px;
         font-size: 13px;
         min-width: 90px;
         min-height: 44px;
     }
-    
-    #processingInfo {
-        font-size: 12px;
-    }
-    
-    #cameraInfo {
-        font-size: 11px;
-    }
-    
+
     video, canvas {
         max-height: 40vh;
     }
-}
 
-/* Landscape orientation on mobile */
-@media (max-width: 768px) and (orientation: landscape) {
-    .container {
-        grid-template-columns: 1fr 1fr;
+    .count-breakdown {
+        font-size: 0.75em;
     }
-    
-    video, canvas {
-        max-height: 35vh;
-    }
-    
-    h1 {
-        font-size: 1.6em;
-        margin-bottom: 10px;
+
+    #selectionCount {
+        padding: 8px 16px;
+        font-size: 13px;
     }
 }
 
-/* iOS specific fixes */
-@supports (-webkit-appearance: none) {
-    video {
-        -webkit-playsinline: true;
-        -webkit-appearance: none;
-    }
-    
-    button {
-        -webkit-appearance: none;
-        -webkit-tap-highlight-color: transparent;
-    }
-}
-
-/* Android specific fixes */
-@media screen and (-webkit-min-device-pixel-ratio: 0) and (min-resolution: .001dpcm) {
-    video {
-        object-fit: cover;
-    }
-}
-
-/* Better touch targets for mobile */
-@media (pointer: coarse) {
-    button {
-        min-height: 48px;
-        min-width: 48px;
-    }
-    
-    .controls {
+/* Tablet landscape */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .checkbox-group {
+        justify-content: center;
         gap: 12px;
     }
-}
-
-/* High DPI displays */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-    video, canvas {
-        image-rendering: -webkit-optimize-contrast;
-        image-rendering: crisp-edges;
+    
+    .checkbox-item label {
+        min-width: 130px;
+        padding: 12px 18px;
+        font-size: 13px;
     }
 }
 
-/* Dark mode support */
+/* Large screens */
+@media (min-width: 1200px) {
+    .container {
+        max-width: 1400px;
+        gap: 20px;
+    }
+    
+    .object-selection-section {
+        padding: 25px;
+    }
+    
+    .checkbox-group {
+        gap: 20px;
+    }
+    
+    .checkbox-item label {
+        min-width: 150px;
+        padding: 14px 24px;
+        font-size: 15px;
+    }
+}
+
+/* Dark mode support - Enhanced */
 @media (prefers-color-scheme: dark) {
     body {
         background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
     }
-    
-    .webcam-section, .image-section, .results-section {
+
+    .object-selection-section,
+    .webcam-section, 
+    .image-section, 
+    .results-section {
         background: rgba(45, 55, 72, 0.9);
         color: #e2e8f0;
         border: 1px solid rgba(255,255,255,0.1);
     }
-    
+
     h2 {
         color: #e2e8f0;
         border-bottom-color: #4a5568;
     }
-    
+
+    .checkbox-item label {
+        background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+        color: #e2e8f0;
+        border-color: #4a5568;
+    }
+
+    /* Dark mode colors for each class maintain the same hues */
+    #eraser:checked + label {
+        background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+        color: white;
+        border-color: #ff6b35;
+    }
+
+    #pencil:checked + label {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        border-color: #4facfe;
+    }
+
+    #pencil-sharpener:checked + label {
+        background: linear-gradient(135deg, #7b68ee 0%, #9370db 100%);
+        color: white;
+        border-color: #7b68ee;
+    }
+
+    #ruler:checked + label {
+        background: linear-gradient(135deg, #32cd32 0%, #98fb98 100%);
+        color: white;
+        border-color: #32cd32;
+    }
+
+    #pen:checked + label {
+        background: linear-gradient(135deg, #ff1493 0%, #ff69b4 100%);
+        color: white;
+        border-color: #ff1493;
+    }
+
+    #selectionCount {
+        background: rgba(113, 128, 150, 0.3);
+        color: #cbd5e0;
+        border-color: #4a5568;
+    }
+
     #processingInfo {
         background: rgba(113, 128, 150, 0.2);
         color: #cbd5e0;
+        border-left-color: #cbd5e0;
     }
-    
+
     #cameraInfo {
         background: rgba(45, 55, 72, 0.8);
         color: #cbd5e0;
         border-color: #4a5568;
     }
-}
 
-/* Reduced motion preference */
-@media (prefers-reduced-motion: reduce) {
-    * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
+    video, canvas {
+        border-color: #4a5568;
+        background: #2d3748;
     }
 }
 
@@ -449,13 +577,51 @@ button:active::before {
         color: black;
     }
     
-    .webcam-section, .image-section, .results-section {
+    .webcam-section {
+        display: none;
+    }
+    
+    .controls {
+        display: none;
+    }
+    
+    .object-selection-section,
+    .image-section,
+    .results-section {
         background: white;
         box-shadow: none;
-        border: 1px solid #000;
+        border: 1px solid #ccc;
+    }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .checkbox-item label {
+        border-width: 3px;
     }
     
     button {
-        display: none;
+        border: 2px solid #000;
+    }
+    
+    #countDisplay {
+        border: 3px solid #000;
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .checkbox-item:hover {
+        transform: none;
+    }
+    
+    button:hover:not(:disabled) {
+        transform: none;
     }
 }
