@@ -1,0 +1,461 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 10px;
+    color: #333;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1 {
+    text-align: center;
+    color: white;
+    margin-bottom: 20px;
+    font-size: 2.2em;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 15px;
+}
+
+.webcam-section, .image-section {
+    background: white;
+    border-radius: 15px;
+    padding: 15px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.results-section {
+    grid-column: 1 / -1;
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+h2 {
+    color: #4a5568;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 8px;
+}
+
+video, canvas {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    border: 3px solid #e2e8f0;
+    border-radius: 10px;
+    display: block;
+    margin: 0 auto 10px auto;
+    background: #f7fafc;
+    object-fit: cover;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Mobile-specific video optimization */
+video {
+    max-height: 60vh;
+    -webkit-playsinline: true;
+    -webkit-appearance: none;
+}
+
+canvas {
+    max-height: 50vh;
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+button {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    min-width: 100px;
+    touch-action: manipulation;
+    -webkit-appearance: none;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+}
+
+button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+button:disabled {
+    background: #cbd5e0;
+    cursor: not-allowed;
+    transform: none;
+    opacity: 0.7;
+}
+
+button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    transition: width 0.6s, height 0.6s;
+    transform: translate(-50%, -50%);
+}
+
+button:active::before {
+    width: 300px;
+    height: 300px;
+}
+
+#resetButton {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ffa500 100%);
+}
+
+#switchCameraButton {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+#countDisplay {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 25px;
+    border-radius: 15px;
+    margin: 15px 0;
+    display: inline-block;
+    min-width: 180px;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+}
+
+.count-number {
+    font-size: 2.5em;
+    font-weight: bold;
+    display: block;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.count-label {
+    font-size: 1em;
+    opacity: 0.9;
+}
+
+#processingInfo {
+    color: #718096;
+    font-style: italic;
+    margin-top: 10px;
+    font-size: 14px;
+    padding: 10px;
+    background: rgba(113, 128, 150, 0.1);
+    border-radius: 8px;
+    border-left: 3px solid #718096;
+}
+
+.camera-info {
+    text-align: center;
+    margin-top: 10px;
+}
+
+#cameraInfo {
+    font-size: 12px;
+    color: #666;
+    background: #f8f9fa;
+    padding: 5px 10px;
+    border-radius: 15px;
+    display: inline-block;
+    border: 1px solid #e2e8f0;
+}
+
+/* Detection visualization */
+.detected-object {
+    position: absolute;
+    border: 3px solid #ff6b35;
+    background: rgba(255, 107, 53, 0.1);
+    z-index: 10;
+}
+
+.object-label {
+    position: absolute;
+    background: #ff6b35;
+    color: white;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: bold;
+    border-radius: 4px;
+    z-index: 11;
+}
+
+/* Loading animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.loading {
+    animation: spin 1s linear infinite;
+}
+
+.pulse {
+    animation: pulse 1s ease-in-out infinite;
+}
+
+/* Success animation */
+@keyframes success {
+    0% { background-color: #4CAF50; }
+    50% { background-color: #8BC34A; }
+    100% { background-color: #4CAF50; }
+}
+
+.success-border {
+    animation: success 1s ease-in-out;
+}
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+    body {
+        padding: 5px;
+    }
+    
+    .container {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    h1 {
+        font-size: 1.8em;
+        margin-bottom: 15px;
+    }
+    
+    h2 {
+        font-size: 1.1em;
+    }
+    
+    .webcam-section, .image-section {
+        padding: 12px;
+    }
+    
+    .controls {
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    button {
+        width: 100%;
+        max-width: 250px;
+        padding: 14px 16px;
+        font-size: 14px;
+        min-height: 48px;
+    }
+    
+    video, canvas {
+        border-width: 2px;
+        max-height: 50vh;
+    }
+    
+    #countDisplay {
+        padding: 20px;
+        min-width: 150px;
+    }
+    
+    .count-number {
+        font-size: 2em;
+    }
+    
+    .count-label {
+        font-size: 0.9em;
+    }
+    
+    #processingInfo {
+        font-size: 13px;
+        padding: 8px;
+    }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+    body {
+        padding: 3px;
+    }
+    
+    h1 {
+        font-size: 1.5em;
+        margin-bottom: 10px;
+    }
+    
+    .webcam-section, .image-section {
+        padding: 10px;
+    }
+    
+    button {
+        padding: 12px 14px;
+        font-size: 13px;
+        min-width: 90px;
+        min-height: 44px;
+    }
+    
+    #processingInfo {
+        font-size: 12px;
+    }
+    
+    #cameraInfo {
+        font-size: 11px;
+    }
+    
+    video, canvas {
+        max-height: 40vh;
+    }
+}
+
+/* Landscape orientation on mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+    .container {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    video, canvas {
+        max-height: 35vh;
+    }
+    
+    h1 {
+        font-size: 1.6em;
+        margin-bottom: 10px;
+    }
+}
+
+/* iOS specific fixes */
+@supports (-webkit-appearance: none) {
+    video {
+        -webkit-playsinline: true;
+        -webkit-appearance: none;
+    }
+    
+    button {
+        -webkit-appearance: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+}
+
+/* Android specific fixes */
+@media screen and (-webkit-min-device-pixel-ratio: 0) and (min-resolution: .001dpcm) {
+    video {
+        object-fit: cover;
+    }
+}
+
+/* Better touch targets for mobile */
+@media (pointer: coarse) {
+    button {
+        min-height: 48px;
+        min-width: 48px;
+    }
+    
+    .controls {
+        gap: 12px;
+    }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    video, canvas {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+    }
+    
+    .webcam-section, .image-section, .results-section {
+        background: rgba(45, 55, 72, 0.9);
+        color: #e2e8f0;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    h2 {
+        color: #e2e8f0;
+        border-bottom-color: #4a5568;
+    }
+    
+    #processingInfo {
+        background: rgba(113, 128, 150, 0.2);
+        color: #cbd5e0;
+    }
+    
+    #cameraInfo {
+        background: rgba(45, 55, 72, 0.8);
+        color: #cbd5e0;
+        border-color: #4a5568;
+    }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Print styles */
+@media print {
+    body {
+        background: white;
+        color: black;
+    }
+    
+    .webcam-section, .image-section, .results-section {
+        background: white;
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+    
+    button {
+        display: none;
+    }
+}
