@@ -2,98 +2,182 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Object Counter - Pen & Pencil</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#667eea">
+    
+    <title>Object Detection - 5 Classes</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="./models/pen_best3.onnx" as="fetch" crossorigin="anonymous">
+    
+    <!-- PWA and mobile optimizations -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <!-- Performance optimizations -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
 </head>
 <body>
-    <h1>🤖 AI Object Counter</h1>
-    
-    <!-- Object Selection Section -->
-    <div class="object-selection-section">
-        <div class="object-selector">
-            <label for="object-select">Pilih Objek yang Ingin Dihitung:</label>
-            <div class="checkbox-group">
-                <div class="checkbox-item">
-                    <input type="checkbox" id="eraser" value="eraser" checked>
-                    <label for="eraser">
-                        <span class="checkmark">✓</span>
-                        Eraser
-                    </label>
+    <!-- Main container -->
+    <div class="app-container">
+        <h1>🎯 Object Detection</h1>
+        <p class="subtitle">Deteksi 5 Jenis Objek: Eraser, Pencil, Pencil Sharpener, Ruler, Pen</p>
+        
+        <div class="container">
+            <!-- Object Selection Section -->
+            <section class="object-selection-section">
+                <div class="object-selector">
+                    <label for="object-select">Pilih Objek yang Ingin Dihitung:</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="eraser" value="eraser" checked>
+                            <label for="eraser">
+                                <span class="checkmark">✓</span>
+                                <span class="class-icon">🧹</span>
+                                Eraser
+                            </label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="pencil" value="pencil" checked>
+                            <label for="pencil">
+                                <span class="checkmark">✓</span>
+                                <span class="class-icon">✏️</span>
+                                Pencil
+                            </label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="pencil-sharpener" value="pencil sharpener" checked>
+                            <label for="pencil-sharpener">
+                                <span class="checkmark">✓</span>
+                                <span class="class-icon">🔧</span>
+                                Pencil Sharpener
+                            </label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="ruler" value="ruler" checked>
+                            <label for="ruler">
+                                <span class="checkmark">✓</span>
+                                <span class="class-icon">📏</span>
+                                Ruler
+                            </label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="pen" value="pen" checked>
+                            <label for="pen">
+                                <span class="checkmark">✓</span>
+                                <span class="class-icon">🖊️</span>
+                                Pen
+                            </label>
+                        </div>
+                    </div>
+                    <div class="selection-info">
+                        <span id="selectionCount">5 objek dipilih</span>
+                        <button id="selectAllButton" class="select-all-btn">Select All</button>
+                        <button id="deselectAllButton" class="deselect-all-btn">Deselect All</button>
+                    </div>
                 </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="pencil" value="pencil" checked>
-                    <label for="pencil">
-                        <span class="checkmark">✓</span>
-                        Pencil
-                    </label>
+            </section>
+
+            <!-- Webcam Section -->
+            <section class="webcam-section">
+                <h2>📹 Camera</h2>
+                <video id="webcam" playsinline autoplay muted></video>
+                <div class="controls">
+                    <button id="startButton">🎥 Start Camera</button>
+                    <button id="switchCameraButton" style="display: none;">🔄 Switch Camera</button>
+                    <button id="captureButton" disabled>📸 Capture Photo</button>
                 </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="pencil-sharpener" value="pencil sharpener" checked>
-                    <label for="pencil-sharpener">
-                        <span class="checkmark">✓</span>
-                        Pencil Sharpener
-                    </label>
+                <div class="camera-info">
+                    <span id="cameraInfo">Camera not active</span>
+                    <div id="cameraCapabilities" class="camera-capabilities"></div>
                 </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="ruler" value="ruler" checked>
-                    <label for="ruler">
-                        <span class="checkmark">✓</span>
-                        Ruler
-                    </label>
+            </section>
+
+            <!-- Captured Image Section -->
+            <section class="image-section">
+                <h2>🖼️ Captured Image</h2>
+                <canvas id="capturedImage" width="640" height="480"></canvas>
+                <div class="controls">
+                    <button id="countButton" disabled>🔢 Count Objects</button>
+                    <button id="downloadButton" disabled>💾 Download Result</button>
                 </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="pen" value="pen" checked>
-                    <label for="pen">
-                        <span class="checkmark">✓</span>
-                        Pen
-                    </label>
+                <div class="image-info">
+                    <span id="imageInfo">No image captured</span>
                 </div>
-            </div>
-            <div class="selection-info">
-                <span id="selectionCount">5 objek dipilih</span>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-section">
+                <h2>📊 Detection Results</h2>
+                <div id="countDisplay">
+                    <span class="count-number">0</span>
+                    <span class="count-label">Total Objek</span>
+                    <div class="count-breakdown"></div>
+                    <div class="confidence-info"></div>
+                </div>
+                
+                <div class="detailed-results">
+                    <div id="classBreakdown" class="class-breakdown-grid"></div>
+                </div>
+                
+                <div class="controls">
+                    <button id="resetButton">🔄 Reset All</button>
+                    <button id="retakeButton" disabled>📸 Retake Photo</button>
+                </div>
+                
+                <div id="processingInfo" class="processing-info">
+                    Ready to start...
+                </div>
+                
+                <!-- Model Status -->
+                <div class="model-status">
+                    <div id="modelStatus" class="status-indicator">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Loading AI Model...</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+        
+        <!-- Performance Monitor (Dev Mode) -->
+        <div id="performanceMonitor" class="performance-monitor" style="display: none;">
+            <h4>📈 Performance Monitor</h4>
+            <div class="perf-stats">
+                <div>Camera Resolution: <span id="cameraRes">-</span></div>
+                <div>Inference Time: <span id="inferenceTime">-</span></div>
+                <div>Total Processing: <span id="totalTime">-</span></div>
+                <div>Memory Usage: <span id="memoryUsage">-</span></div>
             </div>
         </div>
     </div>
 
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading AI Model...</div>
+    </div>
 
-    <div class="container">
-        <!-- Webcam Section -->
-        <div class="webcam-section">
-            <h2>📹 Live Camera</h2>
-            <video id="webcam" autoplay playsinline></video>
-            <div class="controls">
-                <button id="startButton">🎥 Start Camera</button>
-                <button id="switchCameraButton" style="display: none;">🔄 Switch Camera</button>
-                <button id="captureButton" disabled>📸 Capture Photo</button>
+    <div id="errorModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>⚠️ Error</h3>
+            <p id="errorMessage"></p>
+            <div class="modal-actions">
+                <button id="retryButton">🔄 Retry</button>
+                <button id="dismissButton">✖️ Dismiss</button>
             </div>
-            <div class="camera-info">
-                <span id="cameraInfo">Camera not active</span>
-            </div>
-        </div>
-
-        <!-- Image Analysis Section -->
-        <div class="image-section">
-            <h2>🖼️ Captured Image</h2>
-            <canvas id="capturedImage" width="640" height="480"></canvas>
-            <div class="controls">
-                <button id="countButton" disabled>🔢 Count Objects</button>
-                <button id="resetButton">🔄 Reset</button>
-            </div>
-        </div>
-
-        <!-- Results Section -->
-        <div class="results-section">
-            <h2>📊 Detection Results</h2>
-            <div id="countDisplay">
-                <span class="count-number">0</span>
-                <span class="count-label">Total Objek</span>
-                <div class="count-breakdown"></div>
-            </div>
-            <div id="processingInfo">Ready to start...</div>
         </div>
     </div>
+
+    <div id="toast" class="toast"></div>
+
 
     <script src="script.js"></script>
 </body>
