@@ -20,6 +20,15 @@ const errorModal = document.getElementById('errorModal');
 const toast = document.getElementById('toast');
 const performanceMonitor = document.getElementById('performanceMonitor');
 
+// Tambahkan variabel ini setelah line ~20
+let preprocessingInfo = {
+    scale: 1,
+    offsetX: 0,
+    offsetY: 0,
+    originalWidth: 0,
+    originalHeight: 0
+};
+
 // Global Variables
 let stream = null;
 let session = null;
@@ -36,14 +45,14 @@ let performanceData = {
 };
 
 // YOLO Model Configuration
-const MODEL_PATH = './models/pen_best3.onnx';
+const MODEL_PATH = './models/pen_best4.onnx';
 const INPUT_SIZE = 640;
 const CONFIDENCE_THRESHOLD = 0.4;
 const NMS_THRESHOLD = 0.4;
-const CLASS_NAMES = ['eraser', 'pencil', 'pencil sharpener', 'ruler', 'pen'];
+const CLASS_NAMES = ['pen'];
 
 // Filter Variables
-let selectedClasses = new Set(['eraser', 'pencil', 'pencil sharpener', 'ruler', 'pen']);
+let selectedClasses = new Set(['pen']);
 
 /**
  * Enhanced utility functions
@@ -651,8 +660,12 @@ function captureImage() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(webcam, 0, 0, canvas.width, canvas.height);
     
-    // Get image data for inference
+    // Get image data untuk inference
     currentImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    
+    // TAMBAHKAN INI:
+    console.log('Image captured - Canvas dimensions:', canvas.width, 'x', canvas.height);
+    console.log('ImageData dimensions:', currentImageData.width, 'x', currentImageData.height);
     
     // Update performance data
     performanceData.memoryUsage = getMemoryUsage();
@@ -764,6 +777,10 @@ function preprocessImage(imageData) {
     const startTime = performance.now();
     const { data, width, height } = imageData;
     
+    // Simpan dimensi asli
+    preprocessingInfo.originalWidth = width;
+    preprocessingInfo.originalHeight = height;
+    
     // Create canvas for resizing with quality optimization
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -780,23 +797,30 @@ function preprocessImage(imageData) {
     originalCanvas.height = height;
     originalCtx.putImageData(imageData, 0, 0);
     
-    // Calculate letterboxing with aspect ratio preservation
+    // Calculate letterboxing dengan aspect ratio preservation
     const scale = Math.min(INPUT_SIZE / width, INPUT_SIZE / height);
     const scaledWidth = width * scale;
     const scaledHeight = height * scale;
     const offsetX = (INPUT_SIZE - scaledWidth) / 2;
     const offsetY = (INPUT_SIZE - scaledHeight) / 2;
     
-    // Fill with gray background (model expects gray padding)
+    // Simpan info scaling untuk konversi koordinat nanti
+    preprocessingInfo.scale = scale;
+    preprocessingInfo.offsetX = offsetX;
+    preprocessingInfo.offsetY = offsetY;
+    
+    console.log('Preprocessing info:', preprocessingInfo);
+    
+    // Fill dengan gray background (model expects gray padding)
     ctx.fillStyle = '#808080';
     ctx.fillRect(0, 0, INPUT_SIZE, INPUT_SIZE);
     
-    // Draw scaled image with high quality
+    // Draw scaled image dengan high quality
     ctx.drawImage(originalCanvas, offsetX, offsetY, scaledWidth, scaledHeight);
     
     const resizedImageData = ctx.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE);
     
-    // Convert to tensor format [1, 3, 640, 640] with optimized loop
+    // Convert to tensor format [1, 3, 640, 640] dengan optimized loop
     const tensor = new Float32Array(1 * 3 * INPUT_SIZE * INPUT_SIZE);
     const pixelData = resizedImageData.data;
     
@@ -859,29 +883,53 @@ function postprocessOutput(output) {
     const numAnchors = 8400;
     const numClasses = CLASS_NAMES.length;
     
+    console.log('Postprocessing dengan info:', preprocessingInfo);
+    
     for (let i = 0; i < numAnchors; i++) {
-        const x = output[i];
-        const y = output[numAnchors + i];
-        const w = output[2 * numAnchors + i];
-        const h = output[3 * numAnchors + i];
+        // Koordinat dari model (dalam skala 0-640)
+        const modelX = output[i];
+        const modelY = output[numAnchors + i];
+        const modelW = output[2 * numAnchors + i];
+        const modelH = output[3 * numAnchors + i];
         
         for (let classIdx = 0; classIdx < numClasses; classIdx++) {
             const confidence = output[(4 + classIdx) * numAnchors + i];
             const className = CLASS_NAMES[classIdx];
             
             if (confidence > CONFIDENCE_THRESHOLD && selectedClasses.has(className)) {
+                // Convert dari koordinat model (640x640) ke koordinat asli
+                // Pertama, hapus offset letterbox
+                const unscaledX = (modelX - preprocessingInfo.offsetX) / preprocessingInfo.scale;
+                const unscaledY = (modelY - preprocessingInfo.offsetY) / preprocessingInfo.scale;
+                const unscaledW = modelW / preprocessingInfo.scale;
+                const unscaledH = modelH / preprocessingInfo.scale;
+                
+                // Koordinat bounding box (center ke corner)
+                const x = unscaledX - unscaledW / 2;
+                const y = unscaledY - unscaledH / 2;
+                
+                // Pastikan koordinat dalam batas gambar asli
+                const clampedX = Math.max(0, Math.min(x, preprocessingInfo.originalWidth));
+                const clampedY = Math.max(0, Math.min(y, preprocessingInfo.originalHeight));
+                const clampedW = Math.min(unscaledW, preprocessingInfo.originalWidth - clampedX);
+                const clampedH = Math.min(unscaledH, preprocessingInfo.originalHeight - clampedY);
+                
                 detections.push({
-                    x: x - w / 2,
-                    y: y - h / 2,
-                    width: w,
-                    height: w,
+                    x: clampedX,
+                    y: clampedY,
+                    width: clampedW,
+                    height: clampedH,
                     confidence: confidence,
                     classId: classIdx,
-                    className: className
+                    className: className,
+                    // Simpan koordinat asli model untuk debugging
+                    modelCoords: { x: modelX, y: modelY, w: modelW, h: modelH }
                 });
             }
         }
     }
+    
+    console.log(`Found ${detections.length} raw detections`);
     return detections;
 }
 
@@ -910,6 +958,10 @@ async function countObjects() {
         const output = await runInference(inputTensor);
         let detections = postprocessOutput(output);
         detections = applyNMS(detections);
+
+        // Debug koordinat setelah NMS
+        console.log('After NMS:', detections.length, 'detections');
+        debugCoordinateTransformation(detections);
         
         drawDetections(detections);
         
@@ -993,35 +1045,28 @@ function drawDetections(detections) {
     // Redraw original image
     ctx.putImageData(currentImageData, 0, 0);
     
-    // Scale factors
-    const scaleX = canvas.width / INPUT_SIZE;
-    const scaleY = canvas.height / INPUT_SIZE;
+    console.log(`Drawing ${detections.length} detections on ${canvas.width}x${canvas.height} canvas`);
     
-    console.log(`Drawing ${detections.length} detections`);
+    // HAPUS INI (koordinat scaling lama):
+    // const scaleX = canvas.width / INPUT_SIZE;
+    // const scaleY = canvas.height / INPUT_SIZE;
     
-    // Enhanced color mapping with gradients
+    // Enhanced color mapping
     const classColors = {
-        'eraser': '#ff6b35',
-        'pencil': '#4facfe',
-        'pencil sharpener': '#7b68ee',
-        'ruler': '#32cd32',
         'pen': '#ff1493'
     };
     
     const classIcons = {
-        'eraser': '🧹',
-        'pencil': '✏️',
-        'pencil sharpener': '🔧',
-        'ruler': '📏',
         'pen': '🖊️'
     };
     
-    // Enhanced drawing with better visibility
+    // Drawing detections (koordinat sudah dalam skala asli gambar)
     detections.forEach((detection, index) => {
-        const x = detection.x * scaleX;
-        const y = detection.y * scaleY;
-        const width = detection.width * scaleX;
-        const height = detection.height * scaleY;
+        // GANTI INI (tidak perlu scaling lagi):
+        const x = detection.x;  // Sudah dalam koordinat asli
+        const y = detection.y;  // Sudah dalam koordinat asli
+        const width = detection.width;   // Sudah dalam ukuran asli
+        const height = detection.height; // Sudah dalam ukuran asli
         
         const color = classColors[detection.className] || '#ff6b35';
         const icon = classIcons[detection.className] || '📦';
@@ -1108,6 +1153,10 @@ async function countObjects() {
         processingInfo.textContent = 'Processing results...';
         let detections = postprocessOutput(output);
         detections = applyNMS(detections);
+
+        // Debug koordinat setelah NMS
+        console.log('After NMS:', detections.length, 'detections');
+        debugCoordinateTransformation(detections);
         
         // Draw results
         drawDetections(detections);
@@ -1335,6 +1384,23 @@ function retakePhoto() {
     updateClassBreakdownCards({}, {});
     
     showToast('Ready for new photo', 'info');
+}
+
+// Fungsi debug untuk memvalidasi koordinat
+function debugCoordinateTransformation(detections) {
+    if (!window.DEBUG_MODE) return;
+    
+    console.log('=== COORDINATE TRANSFORMATION DEBUG ===');
+    console.log('Original image:', preprocessingInfo.originalWidth, 'x', preprocessingInfo.originalHeight);
+    console.log('Model input size:', INPUT_SIZE, 'x', INPUT_SIZE);
+    console.log('Scaling factor:', preprocessingInfo.scale);
+    console.log('Letterbox offset:', preprocessingInfo.offsetX, ',', preprocessingInfo.offsetY);
+    
+    detections.forEach((det, i) => {
+        console.log(`Detection ${i}:`);
+        console.log(`  Model coords: (${det.modelCoords.x.toFixed(1)}, ${det.modelCoords.y.toFixed(1)}) ${det.modelCoords.w.toFixed(1)}x${det.modelCoords.h.toFixed(1)}`);
+        console.log(`  Final coords: (${det.x.toFixed(1)}, ${det.y.toFixed(1)}) ${det.width.toFixed(1)}x${det.height.toFixed(1)}`);
+    });
 }
 
 // Enhanced Event Listeners
