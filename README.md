@@ -1,4 +1,4 @@
-# CountingObject.github.io
+# Automated Pen Counter
 
-To access the site, please click the following link: <br>
+If you want to try, please access the site by clicking the following link: <br>
 https://juhenfw.github.io/CountingObject.github.io/
